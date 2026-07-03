@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+<t t-name="work_item_systray.WorkItemSystrayItem">
+    <Dropdown class="'o_work_item_systray'" menuClass="'o_work_item_systray_menu o_work_item_menu'">
+        <t t-set-slot="toggler">
+            <span t-attf-class="o_work_item_chip {{ state.cssClass }}">
+                <t t-if="state.icon"><t t-esc="state.icon"/> </t>
+                <span class="o_work_item_chip_text" t-esc="state.name"/>
+            </span>
+            <span t-attf-class="o_work_item_chip ms-1 {{ state.timeColorClass }}"
+                  title="Tiempo trabajado en la actividad actual">
+                ⏱ <t t-esc="state.elapsed"/>
+            </span>
+        </t>
+        <t t-set-slot="default">
+            <DropdownItem onSelected="() => this.onTakeBreak()">
+                <i class="fa fa-pause me-1"/> Descanso
+            </DropdownItem>
+            <div class="dropdown-divider"/>
+            <div class="o_work_item_hint" t-if="state.workItemId">
+                <div class="fw-bold mb-1"><t t-esc="state.name"/></div>
+                <div class="text-muted small mb-2" t-esc="state.description || 'Sin descripción.'"/>
+                <button class="btn btn-sm btn-secondary" t-on-click="() => this.onOpenWorkItem()">
+                    Abrir <i class="fa fa-external-link ms-1"/>
+                </button>
+            </div>
+            <div class="dropdown-divider" t-if="state.workItemId"/>
+            <DropdownItem t-foreach="state.workItems" t-as="item" t-key="item.model + '_' + item.res_id"
+                          onSelected="() => this.onSelectWorkItem(item.model, item.res_id)">
+                <span t-attf-class="{{ item.css_class }}">
+                    <t t-if="item.icon"><t t-esc="item.icon"/> </t>
+                    <t t-esc="item.name"/>
+                </span>
+            </DropdownItem>
+            <DropdownItem t-if="!state.workItems.length" class="'text-muted'">
+                No hay work items disponibles
+            </DropdownItem>
+            <div class="dropdown-divider"/>
+            <DropdownItem onSelected="() => this.onOpenWizardBlank()">
+                ➕ Elegir / crear work item
+            </DropdownItem>
+        </t>
+    </Dropdown>
+</t>
+
+</templates>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_work_item_session_own" model="ir.rule">
+        <field name="name">work.item.session: solo la propia</field>
+        <field name="model_id" ref="model_work_item_session"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+</odoo>
