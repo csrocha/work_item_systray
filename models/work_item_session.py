@@ -18,7 +18,8 @@ class WorkItemSession(models.Model):
         string='Qué se va a hacer',
         help='Lo que el usuario dijo que iba a hacer en work_item_ref al '
              'empezar este período; cada proveedor decide cómo usarlo al '
-             'cerrar el período (ver work.item.mixin._work_item_close).',
+             'cerrar el período (ver el contrato _work_item_close en el '
+             'README de este addon).',
     )
     work_item_ref = fields.Reference(
         selection='_selection_work_item_models', string='Work item activo',
@@ -36,14 +37,21 @@ class WorkItemSession(models.Model):
         ]
 
     def _get_work_item_provider_models(self):
-        """Modelos instalados que implementan work.item.mixin, descubiertos
-        vía el registry: cualquier modelo cuyo _inherit incluya el mixin
-        termina siendo, a nivel de clase Python combinada por Odoo, subclase
-        de él."""
-        mixin_cls = type(self.env['work.item.mixin'])
+        """Modelos instalados que implementan el contrato de work item,
+        descubiertos vía el registry por duck typing: cualquier modelo con
+        el atributo de clase `_work_item_provider = True`.
+
+        No se usa `_inherit` de un AbstractModel mixin a propósito: combinar
+        una clase con `_inherit = ['project.task', 'work.item.mixin']' (o
+        equivalente sobre helpdesk.ticket) dispara, en algunas imágenes de
+        Odoo, un bug de setup de Many2many cuando el modelo ya tiene un
+        campo M2M sobreescrito de forma implícita por otro addon (p. ej.
+        project_enterprise redeclarando `user_ids` sin repetir su relación).
+        El duck typing por atributo de clase logra el mismo descubrimiento
+        sin pasar por esa combinación de herencia."""
         return [
             model_name for model_name, model_cls in self.env.registry.items()
-            if model_name != 'work.item.mixin' and issubclass(model_cls, mixin_cls)
+            if getattr(model_cls, '_work_item_provider', False)
         ]
 
     @api.model

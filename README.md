@@ -6,11 +6,13 @@ deja cambiar de work item con notas de inicio/cierre.
 
 No sabe nada de `project.task`, `helpdesk.ticket` ni de ningún otro modelo de
 dominio — no depende de `project` ni de `helpdesk`. Cualquier modelo se
-vuelve elegible como work item implementando el contrato `work.item.mixin`:
+vuelve elegible como work item implementando el contrato por duck typing
+(atributo de clase `_work_item_provider = True` + 3 métodos):
 
 ```python
 class MyDomainModel(models.Model):
-    _inherit = ['my.domain.model', 'work.item.mixin']
+    _inherit = 'my.domain.model'
+    _work_item_provider = True
 
     def _work_item_label(self):
         # dict {name, icon, css_class, description, **extra} para mostrarlo activo
@@ -26,8 +28,18 @@ class MyDomainModel(models.Model):
 ```
 
 `work.item.session` descubre en runtime, vía el registry de Odoo, qué
-modelos implementan el mixin — ningún addon proveedor toca `work.item.session`
-directamente.
+modelos tienen `_work_item_provider = True` — ningún addon proveedor toca
+`work.item.session` directamente.
+
+**Por qué duck typing y no un `AbstractModel` mixin real** (`_inherit =
+['my.domain.model', 'work.item.mixin']`): en la práctica, esa combinación
+disparó un bug de setup de campos Many2many en Odoo cuando el modelo de
+dominio ya tenía un M2M sobreescrito de forma implícita por otro addon (p.
+ej. `project.task.user_ids`, redeclarado sin relación explícita por
+`project_enterprise`) — Odoo terminaba registrando el mismo campo dos veces
+y fallaba con `TypeError: Many2many fields X and Y use the same table and
+columns` al armar el registry. El atributo de clase evita esa combinación
+de herencia por completo.
 
 El cronómetro del systray **siempre cuenta hacia adelante** por defecto. Los
 proveedores que quieran cuenta regresiva (p. ej. contra un presupuesto de
