@@ -25,6 +25,12 @@ class MyDomainModel(models.Model):
     def _work_item_candidates(self):
         # lista de dicts {res_id, name, icon, css_class} para el usuario actual
         ...
+
+    def _work_item_activate(self):
+        # opcional: qué hacer cuando este registro se vuelve el work item
+        # activo (p. ej. arrancar un timer nativo). Default: no existe, no
+        # se llama a nada (getattr con default None en el core).
+        ...
 ```
 
 `work.item.session` descubre en runtime, vía el registry de Odoo, qué

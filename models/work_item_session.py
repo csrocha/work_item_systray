@@ -91,6 +91,9 @@ class WorkItemSession(models.Model):
             'state': 'active',
             'intent_note': intent_note or False,
         })
+        activate = getattr(self.work_item_ref, '_work_item_activate', None)
+        if activate:
+            activate()
         self._notify_systray()
 
     def take_break(self, outcome_note=None, outcome_blocked=None):
