@@ -11,7 +11,19 @@ formato que `insight_project/BACKLOG.md`).
 Propuesta de "nivel profesional superior" para todo el ecosistema. Visión
 completa en la memoria `project_ecosystem_roadmap`.
 
-### 1. Unificar `_html_to_text()` duplicada entre proveedores
+### ~~1. Unificar `_html_to_text()` duplicada entre proveedores~~ — RESUELTO
+
+Resuelto (2026-07-18): la función se movió a `work_item_systray/utils.py`
+(`html_to_text`), agregado a `__init__.py` (`from . import utils`, mismo
+patrón ya usado en `fop_odoo_chart/utils/`). `work_item_task/models/
+project_task.py` y `work_item_helpdesk/models/helpdesk_ticket.py` ahora
+importan `from odoo.addons.work_item_systray.utils import html_to_text as
+_html_to_text` — ambos ya dependían de `work_item_systray` en su
+manifest, no hizo falta agregar dependencia nueva.
+`work_item_enterprise_task` no tenía copia propia, no se tocó. Verificado
+que `work_item_task` y `work_item_helpdesk` siguen instalando limpio
+(`make test-local`, 0 tests/0 fallos en ambos — ninguno tiene tests
+automatizados sobre esta función).
 
 Confirmado por auditoría de código (2026-07-13):
 `_html_to_text(html_value, max_len=280)` está copiada byte a byte entre
