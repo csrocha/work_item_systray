@@ -37,3 +37,20 @@ proveedor con la misma necesidad y la copie una vez más.
 
 _Fuente: backlog de ecosistema propuesto por el usuario (2026-07-13,
 "Épica 6" ítem 2)._
+
+---
+
+## 2. Tareas sin proyecto, "hoy" separado, y sin duplicados (2026-07-28)
+
+Pendiente, no implementado.
+
+- Mostrar también las tareas que no tienen proyecto asignado (hoy el
+  systray solo lista tareas con proyecto).
+- Mostrar aparte las tareas cuya fecha de acción es hoy, separadas del
+  resto.
+- Evitar tareas duplicadas en el listado.
+- Orden esperado: primero las tareas de hoy, luego el resto de las
+  tareas con fecha de acción (con y sin proyecto mezcladas), ordenadas
+  por prioridad.
+
+_Fuente: pedido del usuario (2026-07-28), a implementar más adelante._
