@@ -41,4 +41,15 @@
         background-color: #f8f9fa;
         color: #495057;
     }
+
+    .o_work_item_pomodoro_blink {
+        animation: o_work_item_pomodoro_blink 1s infinite;
+        background-color: #fff3cd !important;
+        color: #664d03 !important;
+    }
+}
+
+@keyframes o_work_item_pomodoro_blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
 }

@@ -4,7 +4,7 @@
 <t t-name="work_item_systray.WorkItemSystrayItem">
     <Dropdown class="'o_work_item_systray'" menuClass="'o_work_item_systray_menu o_work_item_menu'">
         <t t-set-slot="toggler">
-            <span t-attf-class="o_work_item_chip {{ state.cssClass }}">
+            <span t-attf-class="o_work_item_chip {{ state.cssClass }} {{ state.isPomodoroBlinking ? 'o_work_item_pomodoro_blink' : '' }}">
                 <t t-if="state.icon"><t t-esc="state.icon"/> </t>
                 <span class="o_work_item_chip_text" t-esc="state.name"/>
             </span>
@@ -14,6 +14,12 @@
             </span>
         </t>
         <t t-set-slot="default">
+            <div class="o_work_item_pomodoro_confirm alert alert-warning py-2 px-3 mb-2" t-if="state.isPomodoroBlinking">
+                <div class="mb-1">¿Seguís trabajando en esto?</div>
+                <button class="btn btn-sm btn-warning" t-on-click="() => this.onConfirmPomodoro()">
+                    Sí, seguir <i class="fa fa-check ms-1"/>
+                </button>
+            </div>
             <DropdownItem onSelected="() => this.onTakeBreak()">
                 <i class="fa fa-pause me-1"/> Descanso
             </DropdownItem>
@@ -26,13 +32,26 @@
                 </button>
             </div>
             <div class="dropdown-divider" t-if="state.workItemId"/>
-            <DropdownItem t-foreach="state.workItems" t-as="item" t-key="item.model + '_' + item.res_id"
-                          onSelected="() => this.onSelectWorkItem(item.model, item.res_id)">
-                <span t-attf-class="{{ item.css_class }}">
-                    <t t-if="item.icon"><t t-esc="item.icon"/> </t>
-                    <t t-esc="item.name"/>
-                </span>
-            </DropdownItem>
+            <t t-if="todayItems.length">
+                <div class="dropdown-header text-muted small">Hoy</div>
+                <DropdownItem t-foreach="todayItems" t-as="item" t-key="item.model + '_' + item.res_id"
+                              onSelected="() => this.onSelectWorkItem(item.model, item.res_id)">
+                    <span t-attf-class="{{ item.css_class }}">
+                        <t t-if="item.icon"><t t-esc="item.icon"/> </t>
+                        <t t-esc="item.name"/>
+                    </span>
+                </DropdownItem>
+            </t>
+            <t t-if="otherItems.length">
+                <div class="dropdown-header text-muted small" t-if="todayItems.length">Resto</div>
+                <DropdownItem t-foreach="otherItems" t-as="item" t-key="item.model + '_' + item.res_id"
+                              onSelected="() => this.onSelectWorkItem(item.model, item.res_id)">
+                    <span t-attf-class="{{ item.css_class }}">
+                        <t t-if="item.icon"><t t-esc="item.icon"/> </t>
+                        <t t-esc="item.name"/>
+                    </span>
+                </DropdownItem>
+            </t>
             <DropdownItem t-if="!state.workItems.length" class="'text-muted'">
                 No hay work items disponibles
             </DropdownItem>

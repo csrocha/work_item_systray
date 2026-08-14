@@ -28,6 +28,8 @@ export class WorkItemSystrayItem extends Component {
             startDatetime: false,
             elapsed: "00:00:00",
             timeColorClass: "o_work_item_time-neutral",
+            pomodoroDeadline: false,
+            isPomodoroBlinking: false,
             workItems: [],
             extra: {},
         });
@@ -50,6 +52,7 @@ export class WorkItemSystrayItem extends Component {
         this.state.cssClass = data.css_class || "";
         this.state.description = data.description || "";
         this.state.startDatetime = data.start_datetime;
+        this.state.pomodoroDeadline = data.pomodoro_deadline || false;
         this.state.workItems = data.work_items || [];
         // Datos extra específicos de cada proveedor (p. ej. allocated_hours):
         // el core los guarda tal cual para que solo los lea quien los patchea.
@@ -66,12 +69,33 @@ export class WorkItemSystrayItem extends Component {
         if (this.state.status !== "active" || !this.state.startDatetime) {
             this.state.elapsed = "00:00:00";
             this.state.timeColorClass = "o_work_item_time-neutral";
+            this.state.isPomodoroBlinking = false;
             return;
         }
         const start = new Date(this.state.startDatetime.replace(" ", "T") + "Z");
         const liveSeconds = Math.max(0, Math.floor((Date.now() - start.getTime()) / 1000));
         this.state.elapsed = this._formatDuration(liveSeconds);
         this.state.timeColorClass = "o_work_item_time-neutral";
+        this.state.isPomodoroBlinking = this._computePomodoroBlinking();
+    }
+
+    /**
+     * true desde que se vence el período activo de 25' hasta que se
+     * confirma "seguir" o el cron server-side cierra la sesión (backstop
+     * si se cierra la pestaña o la laptop suspende) — ver
+     * work.item.session._cron_close_expired_pomodoros.
+     */
+    _computePomodoroBlinking() {
+        if (!this.state.pomodoroDeadline) {
+            return false;
+        }
+        const deadline = new Date(this.state.pomodoroDeadline.replace(" ", "T") + "Z");
+        return Date.now() >= deadline.getTime();
+    }
+
+    async onConfirmPomodoro() {
+        const data = await this.orm.call("work.item.session", "action_confirm_pomodoro", []);
+        this._applyData(data);
     }
 
     _formatDuration(seconds) {
@@ -81,6 +105,14 @@ export class WorkItemSystrayItem extends Component {
         const m = String(Math.floor((abs % 3600) / 60)).padStart(2, "0");
         const s = String(abs % 60).padStart(2, "0");
         return `${sign}${h}:${m}:${s}`;
+    }
+
+    get todayItems() {
+        return this.state.workItems.filter((item) => item.is_today);
+    }
+
+    get otherItems() {
+        return this.state.workItems.filter((item) => !item.is_today);
     }
 
     onSelectWorkItem(model, resId) {

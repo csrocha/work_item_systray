@@ -2,7 +2,7 @@
 {
     'name': "Work Item Systray",
     'summary': "Cronómetro y cambio de work item activo (base genérica, sin project ni helpdesk)",
-    'version': '17.0.1.1.1',
+    'version': '17.0.1.2.0',
     'category': 'Productivity',
     'author': "Cristian S. Rocha <csrocha@gmail.com>",
     'website': "https://github.com/csrocha/work_item_systray",
@@ -13,6 +13,7 @@
         'security/work_item_session_security.xml',
         'views/work_item_message_template_views.xml',
         'views/work_item_session_switch_wizard_views.xml',
+        'data/work_item_cron.xml',
     ],
     'assets': {
         'web.assets_backend': [

@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
+
 from odoo import _, api, fields, models
+
+POMODORO_ACTIVE_MINUTES = 25
+POMODORO_GRACE_MINUTES = 5
 
 
 class WorkItemSession(models.Model):
@@ -14,6 +19,12 @@ class WorkItemSession(models.Model):
         default='break', required=True,
     )
     start_datetime = fields.Datetime(default=fields.Datetime.now)
+    pomodoro_deadline = fields.Datetime(
+        string='Vencimiento del pomodoro activo',
+        help='Cuándo termina el período activo de 25\' y empieza a titilar '
+             'pidiendo confirmación. Separado de start_datetime para que '
+             'confirmar "seguir" no fragmente el período real de trabajo.',
+    )
     intent_note = fields.Text(
         string='Qué se va a hacer',
         help='Lo que el usuario dijo que iba a hacer en work_item_ref al '
@@ -80,6 +91,12 @@ class WorkItemSession(models.Model):
         session.take_break(outcome_note=outcome_note, outcome_blocked=outcome_blocked)
         return session.get_systray_data()
 
+    @api.model
+    def action_confirm_pomodoro(self):
+        session = self._get_or_create_for_user()
+        session.confirm_pomodoro()
+        return session.get_systray_data()
+
     def switch_work_item(self, model, res_id, outcome_note=None, outcome_blocked=None, intent_note=None):
         """Cierra el período activo (si existe) y abre uno nuevo sobre
         model,res_id (con la nota de intención)."""
@@ -90,6 +107,7 @@ class WorkItemSession(models.Model):
             'start_datetime': fields.Datetime.now(),
             'state': 'active',
             'intent_note': intent_note or False,
+            'pomodoro_deadline': fields.Datetime.now() + timedelta(minutes=POMODORO_ACTIVE_MINUTES),
         })
         activate = getattr(self.work_item_ref, '_work_item_activate', None)
         if activate:
@@ -105,8 +123,36 @@ class WorkItemSession(models.Model):
             'start_datetime': fields.Datetime.now(),
             'state': 'break',
             'intent_note': False,
+            'pomodoro_deadline': False,
         })
         self._notify_systray()
+
+    def confirm_pomodoro(self):
+        """Empuja pomodoro_deadline otros 25' sin tocar start_datetime — a
+        diferencia de switch_work_item/take_break, que sí cierran y abren
+        períodos, confirmar que se sigue trabajando en lo mismo no debe
+        ensuciar el historial que consume _work_item_close con
+        sub-períodos artificiales cada 25 minutos."""
+        self.ensure_one()
+        if self.state != 'active':
+            return
+        self.pomodoro_deadline = fields.Datetime.now() + timedelta(minutes=POMODORO_ACTIVE_MINUTES)
+        self._notify_systray()
+
+    @api.model
+    def _cron_close_expired_pomodoros(self):
+        """Backstop server-side: si el margen de gracia titilando venció
+        sin confirmación (pestaña cerrada, laptop suspendida — el
+        setInterval client-side nunca llega a correr), cierra la sesión
+        igual que un take_break manual."""
+        limit = fields.Datetime.now() - timedelta(minutes=POMODORO_GRACE_MINUTES)
+        expired = self.search([
+            ('state', '=', 'active'),
+            ('pomodoro_deadline', '!=', False),
+            ('pomodoro_deadline', '<', limit),
+        ])
+        for session in expired:
+            session.take_break(outcome_note=_('En descanso pomodoro, sin continuar'))
 
     def _notify_systray(self):
         """Empuja el nuevo estado por el bus para que el widget del systray
@@ -137,17 +183,31 @@ class WorkItemSession(models.Model):
             'work_item_model': self.work_item_ref._name if self.work_item_ref else False,
             'work_item_id': self.work_item_ref.id if self.work_item_ref else False,
             'start_datetime': fields.Datetime.to_string(self.start_datetime) if self.start_datetime else False,
+            'pomodoro_deadline': fields.Datetime.to_string(self.pomodoro_deadline) if self.pomodoro_deadline else False,
             'work_items': self._get_switchable_work_items(),
         }
         data.update(label)
         return data
 
     def _get_switchable_work_items(self):
-        """Combina los candidatos de todos los proveedores instalados."""
+        """Combina los candidatos de todos los proveedores instalados, sin
+        duplicados (mismo model+res_id, por si dos proveedores llegaran a
+        coincidir), con las tareas de hoy (date_deadline == hoy) primero y
+        el resto ordenado por prioridad — el resto de items sin
+        date_deadline (p. ej. tickets de helpdesk) cae directo en el grupo
+        'resto', también ordenado por prioridad."""
+        today = fields.Date.to_string(fields.Date.context_today(self))
+        seen = set()
         items = []
         for model_name in self._get_work_item_provider_models():
             for candidate in self.env[model_name]._work_item_candidates():
                 candidate = dict(candidate)
                 candidate.setdefault('model', model_name)
+                key = (candidate['model'], candidate['res_id'])
+                if key in seen:
+                    continue
+                seen.add(key)
+                candidate['is_today'] = candidate.get('date_deadline') == today
                 items.append(candidate)
+        items.sort(key=lambda it: (not it['is_today'], -int(it.get('priority') or 0)))
         return items
