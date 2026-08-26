@@ -35,21 +35,29 @@
             <t t-if="todayItems.length">
                 <div class="dropdown-header text-muted small">Hoy</div>
                 <DropdownItem t-foreach="todayItems" t-as="item" t-key="item.model + '_' + item.res_id"
+                              class="'o_work_item_list_item'"
                               onSelected="() => this.onSelectWorkItem(item.model, item.res_id)">
-                    <span t-attf-class="{{ item.css_class }}">
+                    <span t-attf-class="{{ item.css_class }} o_work_item_list_item_text">
                         <t t-if="item.icon"><t t-esc="item.icon"/> </t>
                         <t t-esc="item.name"/>
                     </span>
+                    <i class="fa fa-chevron-right o_work_item_list_item_open"
+                       title="Inspeccionar"
+                       t-on-click.stop="() => this.openWorkItemRecord(item.model, item.res_id)"/>
                 </DropdownItem>
             </t>
             <t t-if="otherItems.length">
                 <div class="dropdown-header text-muted small" t-if="todayItems.length">Resto</div>
                 <DropdownItem t-foreach="otherItems" t-as="item" t-key="item.model + '_' + item.res_id"
+                              class="'o_work_item_list_item'"
                               onSelected="() => this.onSelectWorkItem(item.model, item.res_id)">
-                    <span t-attf-class="{{ item.css_class }}">
+                    <span t-attf-class="{{ item.css_class }} o_work_item_list_item_text">
                         <t t-if="item.icon"><t t-esc="item.icon"/> </t>
                         <t t-esc="item.name"/>
                     </span>
+                    <i class="fa fa-chevron-right o_work_item_list_item_open"
+                       title="Inspeccionar"
+                       t-on-click.stop="() => this.openWorkItemRecord(item.model, item.res_id)"/>
                 </DropdownItem>
             </t>
             <DropdownItem t-if="!state.workItems.length" class="'text-muted'">

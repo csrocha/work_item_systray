@@ -138,10 +138,20 @@ export class WorkItemSystrayItem extends Component {
     }
 
     onOpenWorkItem() {
-        if (!this.state.workItemId || !this.state.workItemModel) {
+        this.openWorkItemRecord(this.state.workItemModel, this.state.workItemId);
+    }
+
+    openWorkItemRecord(model, resId) {
+        if (!model || !resId) {
             return;
         }
-        window.open(`/web#id=${this.state.workItemId}&model=${this.state.workItemModel}&view_type=form`, "_blank");
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: model,
+            res_id: resId,
+            views: [[false, "form"]],
+            target: "new",
+        });
     }
 }
 
